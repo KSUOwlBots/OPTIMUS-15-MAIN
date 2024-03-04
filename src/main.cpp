@@ -1,93 +1,51 @@
 #include "main.h"
-
-/**
- * A callback function for LLEMU's center button.
- *
- * When this callback is fired, it will toggle line 2 of the LCD text between
- * "I was pressed!" and nothing.
- */
-void on_center_button() {
-	static bool pressed = false;
-	pressed = !pressed;
-	if (pressed) {
-		pros::lcd::set_text(2, "I was pressed!");
-	} else {
-		pros::lcd::clear_line(2);
-	}
-}
-
-/**
- * Runs initialization code. This occurs as soon as the program is started.
- *
- * All other competition modes are blocked by initialize; it is recommended
- * to keep execution time for this mode under a few seconds.
- */
+ez::Drive chassis({1, 2, 3}, {-4, -5, -6}, 7, 3.25, 600, 1.6667);
 void initialize() {
-	pros::lcd::initialize();
-	pros::lcd::set_text(1, "Hello PROS User!");
-
-	pros::lcd::register_btn1_cb(on_center_button);
+  ez::ez_template_print();
+  pros::delay(500);
+  chassis.opcontrol_curve_buttons_toggle(false);
+  chassis.opcontrol_drive_activebrake_set(0.1);
+  chassis.opcontrol_curve_default_set(5, 5);
+  ez::as::auton_selector.autons_add({
+      Auton("Example Drive\n\nDrive forward and come back.", drive_example),
+      Auton("Example Turn\n\nTurn 3 times.", turn_example),
+      Auton("Drive and Turn\n\nDrive forward, turn, come back. ",
+            drive_and_turn),
+      Auton("Drive and Turn\n\nSlow down during drive.",
+            wait_until_change_speed),
+      Auton("Swing Example\n\nSwing in an 'S' curve", swing_example),
+      Auton("Combine all 3 movements", combining_movements),
+      Auton("Interference\n\nAfter driving forward, robot performs differently "
+            "if interfered or not.",
+            interfered_example),
+  });
+  chassis.initialize();
+  ez::as::initialize();
+  master.rumble(".");
 }
-
-/**
- * Runs while the robot is in the disabled state of Field Management System or
- * the VEX Competition Switch, following either autonomous or opcontrol. When
- * the robot is enabled, this task will exit.
- */
 void disabled() {}
-
-/**
- * Runs after initialize(), and before autonomous when connected to the Field
- * Management System or the VEX Competition Switch. This is intended for
- * competition-specific initialization routines, such as an autonomous selector
- * on the LCD.
- *
- * This task will exit when the robot is enabled and autonomous or opcontrol
- * starts.
- */
 void competition_initialize() {}
-
-/**
- * Runs the user autonomous code. This function will be started in its own task
- * with the default priority and stack size whenever the robot is enabled via
- * the Field Management System or the VEX Competition Switch in the autonomous
- * mode. Alternatively, this function may be called in initialize or opcontrol
- * for non-competition testing purposes.
- *
- * If the robot is disabled or communications is lost, the autonomous task
- * will be stopped. Re-enabling the robot will restart the task, not re-start it
- * from where it left off.
- */
-void autonomous() {}
-
-/**
- * Runs the operator control code. This function will be started in its own task
- * with the default priority and stack size whenever the robot is enabled via
- * the Field Management System or the VEX Competition Switch in the operator
- * control mode.
- *
- * If no competition control is connected, this function will run immediately
- * following initialize().
- *
- * If the robot is disabled or communications is lost, the
- * operator control task will be stopped. Re-enabling the robot will restart the
- * task, not resume it from where it left off.
- */
+void autonomous() {
+  chassis.pid_targets_reset();
+  chassis.drive_imu_reset();
+  chassis.drive_sensor_reset();
+  chassis.drive_brake_set(MOTOR_BRAKE_HOLD);
+  ez::as::auton_selector.selected_auton_call();
+}
 void opcontrol() {
-	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	pros::MotorGroup left_mg({1,-2,3}); // Creates a motor group with forwards ports 1 & 3 and reversed port 2
-	pros::MotorGroup right_mg({-4,5,-6}); // Creates a motor group with forwards port 4 and reversed ports 4 & 6
+  chassis.drive_brake_set(MOTOR_BRAKE_COAST);
 
-	while (true) {
-		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
-		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0); // Prints status of the emulated screen LCDs
-						 
-		// Arcade control scheme
-		int dir = master.get_analog(ANALOG_LEFT_Y); // Gets amount forward/backward from left joystick
-		int turn = master.get_analog(ANALOG_RIGHT_X); // Gets the turn left/right from right joystick
-		left_mg = dir - turn; // Sets left motor voltage
-		right_mg = dir + turn; // Sets right motor voltage
-		pros::delay(20); // Run for 20 ms then update
-	}
+  while (true) {
+
+    if (!pros::competition::is_connected()) {
+      if (master.get_digital_new_press(DIGITAL_X))
+        chassis.pid_tuner_toggle();
+      if (master.get_digital_new_press(DIGITAL_B))
+        autonomous();
+      chassis.pid_tuner_iterate();
+    }
+
+    chassis.opcontrol_arcade_standard(ez::SPLIT);
+    pros::delay(ez::util::DELAY_TIME);
+  }
 }
