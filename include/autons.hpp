@@ -4,4 +4,4 @@ extern Drive chassis;
 void default_constants();
 
 // add autos here
-void autonomous_1();
+void optimusAuto();

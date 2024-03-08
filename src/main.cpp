@@ -9,14 +9,20 @@
 ez::Drive chassis(
     // Left Chassis Ports (negative port will reverse it!)
     //   the first port is used as the sensor
-    {-16, 17, -19, 20},
+    
+    {17, 16, -19, -10},
+
+    //2 went back
+
+    
 
     // Right Chassis Ports (negative port will reverse it!)
     //   the first port is used as the sensor
-    {-11, 13, -14, 15},
+    
+    {-13, 2, -15, 6},
 
     // IMU Port
-    6,
+    8,
 
     // Wheel Diameter (Remember, 4" wheels without screw holes are
     // actually 4.125!)
@@ -29,7 +35,7 @@ ez::Drive chassis(
     // eg. if your drive is 84:36 where the 36t is powered, your RATIO would be
     // 84/36 which is 2.333 eg. if your drive is 36:60 where the 60t is powered,
     // your RATIO would be 36/60 which is 0.6
-    0.6666666667);
+    0.5625);
 
 /**
  * Runs initialization code. This occurs as soon as the program is started.
@@ -55,11 +61,6 @@ void initialize() {
 
   // Set the drive to your own constants from autons.cpp!
   default_constants();
-
-  // Autonomous Selector using LLEMU
-  ez::as::auton_selector.autons_add({
-      Auton("example auton description", autonomous_1),
-  });
 
   // Initialize chassis and auton selector
   chassis.initialize();
@@ -114,7 +115,7 @@ void autonomous() {
   chassis.drive_brake_set(MOTOR_BRAKE_HOLD);
 
   // Calls selected auton from autonomous selector
-  ez::as::auton_selector.selected_auton_call();
+  optimusAuto();
 }
 
 /**
