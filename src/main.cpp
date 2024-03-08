@@ -9,16 +9,14 @@
 ez::Drive chassis(
     // Left Chassis Ports (negative port will reverse it!)
     //   the first port is used as the sensor
-    
+
     {17, 16, -19, -10},
 
-    //2 went back
-
-    
+    // 2 went back
 
     // Right Chassis Ports (negative port will reverse it!)
     //   the first port is used as the sensor
-    
+
     {-13, 2, -15, 6},
 
     // IMU Port
@@ -57,6 +55,7 @@ void initialize() {
 
   // Defaults for curve. If using tank, only the first parameter is  used.
   // (Comment this line out if you have an SD card!)
+  chassis.opcontrol_curve_buttons_toggle(false);
   chassis.opcontrol_curve_default_set(0, 0);
 
   // Set the drive to your own constants from autons.cpp!
